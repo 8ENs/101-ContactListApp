@@ -1,26 +1,25 @@
 ## TODO: Implement CSV reading/writing
 require 'csv'
 
-class Contact_Database
+class ContactDatabase # Accessor
+  def initialize(file_name)
+    @file_name = file_name
+  end
 
   def read_contacts
-    contacts = CSV.read('contacts.csv')
-
-    #contacts.each do |contact|
-    #  puts "#{contact[0]}: #{contact[1]} (#{contact[2]})"
-    #end
-
-    #CSV.foreach('contacts.csv') do |row|
-    #  puts "#{contact[0]}: #{contact[1]} (#{contact[2]})"
-    #end
+    CSV.read(@file_name)
   end 
 
-  def write_contact(contact_array)
-    #contacts = CSV.read('contacts.csv')
-    #id = contacts.length + 1
-    CSV.open("contacts.csv", "a") do |content|
-      content << contact_array
+  def write_contact(name, email, phone)
+    id = CSV.read(@file_name).length + 1
+    CSV.open(@file_name, "a") do |content|
+      content << [id, name, email, phone]
     end
+    id
+  end
+
+  def num_contacts
+    CSV.read(@file_name).length # not used currently
   end
 
   # reading & writing contacts.csv
@@ -28,19 +27,3 @@ class Contact_Database
   # when should the app write to the file?
   # seed CSV to work off existing contacts
 end
-
-
-=begin
- 
-CSV.foreach('customers.csv') do |row|
-  puts row.inspect
-end  
-
-# output: ["Benjamin Sanders", "ben@coderush.ca"]
-
-#CSV.foreach('contacts.csv') do |row|                           # TODO: Not working
-  puts row
-#end
-    .push "#{contact[0]}: #{contact[1]} (#{contact[2]})"
-
-=end

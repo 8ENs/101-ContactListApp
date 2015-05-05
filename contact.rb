@@ -6,38 +6,43 @@
 #    find - Find a contact
 
 class Contact
+  attr_accessor :name, :email # need full accessor?
  
-  attr_accessor :name, :email
- 
-  def initialize(name, email)
+  def initialize(name, email, phone = [])
     @name = name
     @email = email
+    @phone = phone
   end
  
-  def to_s
+  def to_s(contact_array) # could remove argument but would need to adjust ContactDatabase.read_contacts to return Contact objects
     # TODO: return string representation of Contact
+    "#{contact_array[0]}: #{contact_array[1]} (#{contact_array[2]}) #{contact[3]}"
   end
  
   ## Class Methods
   class << self #Contact.______  # purpose of this line???
-    def create(name, email)
-      #contact = Contact.new(name, email) # why?
-      
-      #contacts = rolodex.read_contacts # eventually move outside of here
-      #id = contacts.length + 1
-      #new_contact = [id, full_name, email]
-      #rolodex.write_contact(new_contact) # TODO rolodex not accessible!
-      #puts "#{full_name} has been stored as id #{id}"
+    def init(file_name)
+      @@access_rolodex = ContactDatabase.new(file_name) 
+    end
 
-      # TODO: Will initialize a contact
-      # add it to the list of contacts
+    def print(array_of_contacts)
+      array_of_contacts.each { |contact| puts "#{contact[0]}: #{contact[1]} (#{contact[2]}) #{contact[3]}" } # refactor: Contact.to_s(contact) }
+      "(end of list)"  # why necessary; return something else?
+    end
+
+    def create(name, email, phone_array)
+      phone = phone_array.join(" | ")
+      Contact.new(name, email, phone)
+      id = @@access_rolodex.write_contact(name, email, phone) 
+      puts "#{name} has been stored as id #{id}"
     end
  
     def find(search_string)
       #IN: sub-string
       results_array = []
 
-      CSV.foreach('contacts.csv') do |contact|
+      contacts = @@access_rolodex.read_contacts
+      contacts.each do |contact|
         if contact[1].downcase.include?(search_string.downcase) || contact[2].downcase.include?(search_string.downcase)
           results_array << contact
         end
@@ -45,27 +50,32 @@ class Contact
       results_array
       #OUT: corresponding contact
     end
+
+    def add_phone(id, label, number)
+      CSV.foreach('contacts.csv') do |contact|
+        if contact[0].to_i == id
+          contact << "#{label}: #{number}" # format number w/ REGEX down to \d ?
+        end
+      end
+      results_array # return corresponding contact
+    end
  
     def all
       i = 0
-      CSV.foreach('contacts.csv') do |contact|
-        puts "#{contact[0]}: #{contact[1]} (#{contact[2]})"
+      array_of_contacts = @@access_rolodex.read_contacts
+      array_of_contacts.each do |contact|
+        puts "#{contact[0]}: #{contact[1]} (#{contact[2]}) #{contact[3]}" # refactor: Contact.to_s(contact)
         i += 1
       end
       puts "---"
-      puts "#{i} record(s) total" # puts "#{contacts.length} record(s) total"
+      puts "#{i} record(s) total"
     end
     
     def show(id)
-      CSV.foreach('contacts.csv') do |row|
-        return row if row[0].to_i == id
+      contacts = @@access_rolodex.read_contacts
+      contacts.each do |contact|
+        return contact if contact[0].to_i == id
       end
-      #OUT: corresponding contact
-    end
-
-    def print(array_of_contacts)
-      array_of_contacts.each { |contact| puts "#{contact[0]}: #{contact[1]} (#{contact[2]})" }
-      "(end of list)"
     end
   end
 end
