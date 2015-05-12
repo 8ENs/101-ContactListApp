@@ -5,9 +5,16 @@
 #    show - Show a contact
 #    find - Find a contact
 
+require 'dotenv'
+Dotenv.load
+
+require 'pg'
+
 class Contact
   attr_accessor :name, :email # need full accessor?
  
+  @@connection = nil
+
   def initialize(name, email, phone = [])
     @name = name
     @email = email
@@ -77,5 +84,19 @@ class Contact
         return contact if contact[0].to_i == id
       end
     end
+
+    def connection
+      # establishes connection via Heroku
+      # if nil, create; else return existing
+      if @@connection.nil?
+        @@connection = PG::Connection.new( :host => ENV["HOST"], :dbname => ENV["DB"], :user => ENV["DBUSER"], :password => ENV["PASS"], :port => ENV["PORT"] )
+      end
+      @@connection
+      # returns connection object
+    end 
   end
 end
+
+conn = Contact.connection
+result = conn.exec('SELECT * FROM contacts;')
+puts result[0]

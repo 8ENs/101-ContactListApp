@@ -3,7 +3,9 @@ GEM
   specs:
     coderay (1.1.0)
     diff-lcs (1.2.5)
+    dotenv (2.0.1)
     method_source (0.8.2)
+    pg (0.18.1)
     pry (0.10.1)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -27,5 +29,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  dotenv
+  pg
   pry
   rspec
