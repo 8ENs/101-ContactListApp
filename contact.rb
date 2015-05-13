@@ -1,102 +1,101 @@
-# ruby contact_list.rb show 1
-# Here is a list of available commands:
-#    new  - Create a new contact
-#    list - List all contacts
-#    show - Show a contact
-#    find - Find a contact
-
-require 'dotenv'
-Dotenv.load
-
-require 'pg'
-
 class Contact
-  attr_accessor :name, :email # need full accessor?
+  attr_accessor :firstname, :lastname, :email, :id # all needed as accessor?
  
-  @@connection = nil
+  @@connection = nil # should there still be a class variable?
+  
+  def self.connection
+    # if nil, create; else return existing
+    if @@connection.nil?
+      @@connection = PG::Connection.new( :host => ENV["HOST"], :dbname => ENV["DB"], :user => ENV["DBUSER"], :password => ENV["PASS"], :port => ENV["PORT"] )
+    end
+    @@connection
+    # returns connection object
+  end 
 
-  def initialize(name, email, phone = [])
-    @name = name
+  CONN = Contact.connection
+
+  def initialize(firstname, lastname, email, id = nil)
+    @firstname = firstname
+    @lastname = lastname
     @email = email
-    @phone = phone
+    @id = id
   end
  
-  def to_s(contact_array) # could remove argument but would need to adjust ContactDatabase.read_contacts to return Contact objects
-    # TODO: return string representation of Contact
-    "#{contact_array[0]}: #{contact_array[1]} (#{contact_array[2]}) #{contact[3]}"
+  # def to_s(contact_array) # could remove argument but would need to adjust ContactDatabase.read_contacts to return Contact objects
+  #   # TODO: return string representation of Contact
+  #   "#{contact_array[0]}: #{contact_array[1]} (#{contact_array[2]}) #{contact[3]}"
+  # end
+
+  def is_new?
+    @id.nil?
+  end
+
+  def save
+    if is_new?
+      result = CONN.exec_params('INSERT INTO contacts (firstname, lastname, email) VALUES ($1, $2, $3) returning id;', [@firstname, @lastname, @email])
+      @id = result[0]['id']
+    else
+      CONN.exec_params('UPDATE contacts SET firstname = $1, lastname = $2, email = $3 WHERE id = $4;', [@firstname, @lastname, @email, @id])
+    end
+  end
+
+  def destroy
+    CONN.exec_params('DELETE FROM contacts WHERE id = $1', [@id])
+  end
+
+  def self.find(id)
+    con_obj = CONN.exec_params('SELECT * FROM contacts WHERE id = $1 LIMIT 1;', [id])
+    if con_obj.ntuples > 0
+      result = Contact.new(con_obj[0]['firstname'], con_obj[0]['lastname'], con_obj[0]['email'], id)
+    end
+
+    # return single Contact or NIL
   end
  
-  ## Class Methods
-  class << self #Contact.______  # purpose of this line???
-    def init(file_name)
-      @@access_rolodex = ContactDatabase.new(file_name) 
+  def self.all
+    results = []
+    CONN.exec_params('SELECT * FROM contacts;').each do |tuple|
+      results << Contact.new(
+        tuple['firstname'],
+        tuple['lastname'],
+        tuple['email'],
+        tuple['id']
+      )
     end
-
-    def print(array_of_contacts)
-      array_of_contacts.each { |contact| puts "#{contact[0]}: #{contact[1]} (#{contact[2]}) #{contact[3]}" } # refactor: Contact.to_s(contact) }
-      "(end of list)"  # why necessary; return something else?
-    end
-
-    def create(name, email, phone_array)
-      phone = phone_array.join(" | ")
-      Contact.new(name, email, phone)
-      id = @@access_rolodex.write_contact(name, email, phone) 
-      puts "#{name} has been stored as id #{id}"
-    end
+    results # return array of Contacts (or nil)
+  end
  
-    def find(search_string)
-      #IN: sub-string
-      results_array = []
+  def self.find_all_by_lastname(lastname)
+    results = []
+    CONN.exec_params('SELECT * FROM contacts WHERE lastname = $1', [lastname]).each do |tuple|
+      results << Contact.new(
+        tuple['firstname'],
+        lastname,
+        tuple['email'],
+        tuple['id']
+      )
+    end
+    results # return array of Contacts (or nil)
+  end
 
-      contacts = @@access_rolodex.read_contacts
-      contacts.each do |contact|
-        if contact[1].downcase.include?(search_string.downcase) || contact[2].downcase.include?(search_string.downcase)
-          results_array << contact
-        end
-      end
-      results_array
-      #OUT: corresponding contact
+  def self.find_all_by_firstname(firstname)
+    results = []
+    CONN.exec_params('SELECT * FROM contacts WHERE firstname = $1', [firstname]).each do |tuple|
+      results << Contact.new(
+        firstname,
+        tuple['lastname'],
+        tuple['email'],
+        tuple['id']
+      )
     end
+    results # return array of Contacts (or nil)
+  end
 
-    def add_phone(id, label, number)
-      CSV.foreach('contacts.csv') do |contact|
-        if contact[0].to_i == id
-          contact << "#{label}: #{number}" # format number w/ REGEX down to \d ?
-        end
-      end
-      results_array # return corresponding contact
+  def self.find_by_email(email)
+    con_obj = CONN.exec_params('SELECT * FROM contacts WHERE email = $1 LIMIT 1;', [email])
+    if con_obj.ntuples > 0
+      result = Contact.new(con_obj[0]['firstname'], con_obj[0]['lastname'], email, con_obj[0]['id'])
     end
- 
-    def all
-      i = 0
-      array_of_contacts = @@access_rolodex.read_contacts
-      array_of_contacts.each do |contact|
-        puts "#{contact[0]}: #{contact[1]} (#{contact[2]}) #{contact[3]}" # refactor: Contact.to_s(contact)
-        i += 1
-      end
-      puts "---"
-      puts "#{i} record(s) total"
-    end
-    
-    def show(id)
-      contacts = @@access_rolodex.read_contacts
-      contacts.each do |contact|
-        return contact if contact[0].to_i == id
-      end
-    end
-
-    def connection
-      # establishes connection via Heroku
-      # if nil, create; else return existing
-      if @@connection.nil?
-        @@connection = PG::Connection.new( :host => ENV["HOST"], :dbname => ENV["DB"], :user => ENV["DBUSER"], :password => ENV["PASS"], :port => ENV["PORT"] )
-      end
-      @@connection
-      # returns connection object
-    end 
+    # return either single contact (or nil)
   end
 end
-
-conn = Contact.connection
-result = conn.exec('SELECT * FROM contacts;')
-puts result[0]
