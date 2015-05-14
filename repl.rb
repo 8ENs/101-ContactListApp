@@ -2,68 +2,65 @@
 
 if ARGV[0] == "help" 
   puts "Here is a list of available commands:"
-  puts "  new  - Create a new contact"
-  puts "  list - List all contacts"
-  puts "  show - Show a contact (eg. 'ruby main.rb show 3')"
-  puts "  find_first - Find a contact by FIRST name (eg. 'ruby main.rb findfirst Ben')"
-  puts "  find_last - Find a contact by LAST name (eg. 'ruby main.rb findlast Sanders')" # case sensitive
-  puts "  find_email - Find a contact by EMAIL (eg. 'ruby main.rb find_email ben@bensanders.ca')" 
-  puts "  delete - Delete a contact (eg. 'ruby main.rb delete 3')" 
-  puts "  add_phone - Add phone (eg. 'ruby main.rb add_phone 3 Mobile 8673368077')" # TODO BONUS
+  puts "  new        - Create new contact"
+  puts "  list       - List all contacts"
+  puts "  find       - Find contact (eg. 'ruby setup.rb find 3')"
+  puts "  find_first - Find contact by FIRST name (eg. 'ruby setup.rb findfirst Ben')"
+  puts "  find_last  - Find contact by LAST name (eg. 'ruby setup.rb findlast Sanders')" # case sensitive
+  puts "  find_email - Find contact by EMAIL (eg. 'ruby setup.rb find_email ben@bensanders.ca')" 
+  puts "  delete     - Delete contact (eg. 'ruby setup.rb delete 3')" 
+  puts "  add_phone  - Add phone (eg. 'ruby setup.rb add_phone 3 Mobile 8673368077')"
 elsif ARGV[0] == "new" 
   puts "Enter email:"
-  email = STDIN.gets.chomp
-  if Contact.find_by_email(email)
+  email_in = STDIN.gets.chomp
+  if Contact.where(email: email_in).length > 0
     puts "Error: that email address already exists!"
   else
     puts "Enter first name:"
-    firstname = STDIN.gets.chomp
+    firstname_in = STDIN.gets.chomp
 
     puts "Enter last name:"
-    lastname = STDIN.gets.chomp
+    lastname_in = STDIN.gets.chomp
 
     digit_array = []
-
     loop do
       puts "Enter phone (##########) - enter 'q' if done" # Error checking later
-      phone = STDIN.gets.chomp
-      break if phone.to_i <= 0
-      puts "Enter lable (eg. 'Mobile')"
-      label = STDIN.gets.chomp
-      digit_array << { phone: phone, label: label }
+      phone_in = STDIN.gets.chomp
+      break if phone_in.to_i <= 0
+      puts "Enter label (eg. 'Mobile')"
+      label_in = STDIN.gets.chomp
+      digit_array << { phone: phone_in, label: label_in }
     end
 
-    new_contact = Contact.new(firstname, lastname, email)
-    new_contact.save
-    new_contact.add_phone(digit_array) if digit_array.length > 0
+    new_contact = Contact.create(firstname: firstname_in, lastname: lastname_in, email: email_in)
+    digit_array.each { |phone_hash| Phone.create(phone: phone_hash[:phone], label: phone_hash[:label], contact_id: new_contact.id) } if digit_array.length > 0
   end
 
 elsif ARGV[0] == "list" 
-  array_of_contacts = Contact.all
-  array_of_contacts.each { |contact| puts contact }
-
-elsif ARGV[0] == "show" && ARGV[1]
-  contact = Contact.find(ARGV[1].to_i) # do I need the '.to_i' ?
-  puts contact ? contact : "#{ARGV[1]} (not found)"
+  puts Contact.all ? Contact.all : "(DB empty)"
+  
+elsif ARGV[0] == "find" && ARGV[1]
+  # need error/exception handling when id doesn't exist
+  puts Contact.find(ARGV[1])
 
 elsif ARGV[0] == "find_first" && ARGV[1]
-  array_of_contacts = Contact.find_all_by_firstname((ARGV[1]))
-  array_of_contacts.each { |contact| puts contact }
+  puts Contact.where(firstname: ARGV[1]).length > 0 ? Contact.where(firstname: ARGV[1]) : "#{ARGV[1]} (first name not found)"
 
 elsif ARGV[0] == "find_last" && ARGV[1]
-  array_of_contacts = Contact.find_all_by_lastname((ARGV[1]))
-  array_of_contacts.each { |contact| puts contact }
+  puts Contact.where(lastname: ARGV[1]).length > 0 ? Contact.where(lastname: ARGV[1]) : "#{ARGV[1]} (last name not found)"
 
 elsif ARGV[0] == "find_email" && ARGV[1]
-  contact = Contact.find_by_email((ARGV[1]))
-  puts contact ? contact : "#{ARGV[1]} (not found)"
+  puts Contact.where(email: ARGV[1]).length > 0 ? Contact.where(email: ARGV[1]) : "#{ARGV[1]} (email not found)"
 
 elsif ARGV[0] == "delete" && ARGV[1]
-  Contact.destroy(ARGV[1].to_i)
+  # need error/exception handling when id doesn't exist
+  Contact.find(ARGV[1]).destroy
+  Phone.find_by(contact_id: ARGV[1]).destroy
+
   # currently will puts this message whether ARGV[1] exists or not
-  puts "ID-#{ARGV[1].to_i} was deleted..."
+  puts "ID-#{ARGV[1]} was deleted..."
 
 elsif ARGV[0] == "add_phone" && ARGV[1] && ARGV[2] && ARGV[3]
-  mod_contact = Contact.find(ARGV[1])
-  mod_contact.add_phone([{ phone: ARGV[3], label: ARGV[2]}]) if mod_contact # not error checking for order of input
+  # not error checking for order of inputs (ARGV's) or if that # already exists
+  Phone.create(phone: ARGV[3], label: ARGV[2], contact_id: ARGV[1])
 end
