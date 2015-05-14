@@ -37,40 +37,32 @@ elsif ARGV[0] == "new"
     new_contact.save
     new_contact.add_phone(digit_array) if digit_array.length > 0
   end
+
 elsif ARGV[0] == "list" 
   array_of_contacts = Contact.all
-  array_of_contacts.each do |contact| 
-    phone_mash = ""
-    contact.phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" }
-    puts "#{contact.id}: #{contact.lastname}, #{contact.firstname} (#{contact.email})#{phone_mash}"
-  end
+  array_of_contacts.each { |contact| puts contact }
+
 elsif ARGV[0] == "show" && ARGV[1]
   contact = Contact.find(ARGV[1].to_i) # do I need the '.to_i' ?
-  phone_mash = ""
-  contact.phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" } if contact
-  puts contact ? "#{contact.lastname}, #{contact.firstname} (#{contact.email})#{phone_mash}" : "#{ARGV[1]} (not found)"
+  puts contact ? contact : "#{ARGV[1]} (not found)"
+
 elsif ARGV[0] == "find_first" && ARGV[1]
   array_of_contacts = Contact.find_all_by_firstname((ARGV[1]))
-  array_of_contacts.each do |contact| 
-    phone_mash = ""
-    contact.phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" }
-    puts "#{contact.id}: #{contact.lastname}, #{contact.firstname} (#{contact.email})#{phone_mash}"
-  end
+  array_of_contacts.each { |contact| puts contact }
+
 elsif ARGV[0] == "find_last" && ARGV[1]
   array_of_contacts = Contact.find_all_by_lastname((ARGV[1]))
-  array_of_contacts.each do |contact| 
-    phone_mash = ""
-    contact.phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" }
-    puts "#{contact.id}: #{contact.lastname}, #{contact.firstname} (#{contact.email})#{phone_mash}"
-  end
+  array_of_contacts.each { |contact| puts contact }
+
 elsif ARGV[0] == "find_email" && ARGV[1]
   contact = Contact.find_by_email((ARGV[1]))
-  phone_mash = ""
-  contact.phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" }
-  puts contact ? "#{contact.id}: #{contact.lastname}, #{contact.firstname} (#{contact.email})#{phone_mash}" : "#{ARGV[1]} (not found)"
+  puts contact ? contact : "#{ARGV[1]} (not found)"
+
 elsif ARGV[0] == "delete" && ARGV[1]
   Contact.destroy(ARGV[1].to_i)
+  # currently will puts this message whether ARGV[1] exists or not
   puts "ID-#{ARGV[1].to_i} was deleted..."
+
 elsif ARGV[0] == "add_phone" && ARGV[1] && ARGV[2] && ARGV[3]
   mod_contact = Contact.find(ARGV[1])
   mod_contact.add_phone([{ phone: ARGV[3], label: ARGV[2]}]) if mod_contact # not error checking for order of input

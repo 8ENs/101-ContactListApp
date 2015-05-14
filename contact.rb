@@ -22,10 +22,15 @@ class Contact
     @phone = phone
   end
  
-  # def to_s(contact_array) # could remove argument but would need to adjust ContactDatabase.read_contacts to return Contact objects
-  #   # TODO: return string representation of Contact
-  #   "#{contact_array[0]}: #{contact_array[1]} (#{contact_array[2]}) #{contact[3]}"
-  # end
+  def to_s
+    "#{@id}: #{@lastname}, #{@firstname} (#{@email})#{self.phone_mash}"
+  end
+
+  def phone_mash
+    phone_mash = ""
+    @phone.each { |phone_hash| phone_mash << " | #{phone_hash[:phone]} (#{phone_hash[:label]})" }
+    phone_mash
+  end
 
   def is_new?
     @id.nil?
@@ -80,6 +85,7 @@ class Contact
     results = []
     CONN.exec('SELECT * FROM contacts;').each do |tuple|
       # 'SELECT * FROM contacts LEFT JOIN phones ON id = contact_id;'
+      # 'SELECT phone, label FROM contacts LEFT JOIN phones ON id = contact_id WHERE id = 20;'
       # phone_hash = { phone: tuple['phone'], label: tuple['label']}
       temp_contact = Contact.new(
         tuple['firstname'],
