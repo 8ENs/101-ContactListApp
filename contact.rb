@@ -1,4 +1,4 @@
-class Contact
+class Contact < ActiveRecord::Base
   attr_accessor :firstname, :lastname, :email, :id, :phone # all needed as accessor?
  
   @@connection = nil # should there still be a class variable?
